@@ -20,9 +20,9 @@ import {
 } from "./utils";
 
 const TEST_DATA_1 = {
-  agentId: BigNumber.from("44444444"),
+  agentId: "44444444",
   owner: "0x88dC3a2284FA62e0027d6D6B1fCfDd2141a143b8",
-  chainIds: [BigNumber.from("333")],
+  chainIds: "333",
   metadata: "abcdefghi",
 };
 const TEST_DATA_2 = {
@@ -50,14 +50,14 @@ describe("Nethermind Agent", () => {
   });
   it("returns empty findings if no transactions", async () => {
     let txEvent = new TestTransactionEvent();
-     findings = await handleTransaction(txEvent);
+    findings = await handleTransaction(txEvent);
     expect(findings).toStrictEqual([]);
   });
 
   it("returns empty findings if it's a different deployer", async () => {
     const TEST_DEPLOYER = createAddress("0x1");
-    console.log("reached here")
-     txEvent = new TestTransactionEvent()
+    console.log("reached here");
+    txEvent = new TestTransactionEvent()
       .setFrom(TEST_DEPLOYER)
       .setTo(FORTA_CONTRACT_ADDRESS)
       .addTraces({
@@ -73,29 +73,34 @@ describe("Nethermind Agent", () => {
         ],
       });
 
-     findings = await handleTransaction(txEvent);
+    findings = await handleTransaction(txEvent);
     expect(findings).toStrictEqual([]);
   });
 
- 
-    it("returns a finding when there's a bot deployment from Nethermind To Forta", async () => {
-      const mockTxEvent: TestTransactionEvent = new TestTransactionEvent()
-        .setFrom(NETHERMIND_DEPLOYER_ADDRESS)
-        .setTo(FORTA_CONTRACT_ADDRESS)
-        .addTraces({
-          to: FORTA_CONTRACT_ADDRESS,
-          from: NETHERMIND_DEPLOYER_ADDRESS,
-          function: "" || fortaProxy.getFunction("createAgent") || undefined,
-          arguments:[
-            TEST_DATA_1.agentId,
+  it("returns a finding when there's a bot deployment from Nethermind To Forta", async () => {
+    const mockTxEvent: TestTransactionEvent = new TestTransactionEvent()
+      .setFrom(NETHERMIND_DEPLOYER_ADDRESS)
+      .setTo(FORTA_CONTRACT_ADDRESS)
+      .addTraces({
+        to: FORTA_CONTRACT_ADDRESS,
+        from: NETHERMIND_DEPLOYER_ADDRESS,
+        function: "" || fortaProxy.getFunction("createAgent") || undefined,
+        arguments: [
+          TEST_DATA_1.agentId,
           TEST_DATA_1.owner,
-            [BigNumber.from(TEST_DATA_1.chainIds[0])],
-            TEST_DATA_1.metadata,
 
-          ],
-        });
-      const findings = await handleTransaction(mockTxEvent);
-      const expectedFinding = {
+          TEST_DATA_1.metadata,
+          [BigNumber.from(TEST_DATA_1.chainIds[0])],
+        ],
+      });
+    const findings = await handleTransaction(mockTxEvent);
+    const expectedFinding = (
+      agentId: string,
+      metadata: string,
+      chainIds: string,
+      owner: string
+    ): Finding => {
+      return Finding.fromObject({
         name: "New Nethermind Bot Created",
         description: `New bot deployed by NM`,
         alertId: "FORTA-NM",
@@ -104,19 +109,19 @@ describe("Nethermind Agent", () => {
         metadata: {
           agentId: TEST_DATA_1.agentId,
           owner: TEST_DATA_1.owner,
-          chainIds: TEST_DATA_1.chainIds[0],
+          chainIds: TEST_DATA_1.chainIds,
           metadata: TEST_DATA_1.metadata,
         },
+      });
+    };
 
-      }
-      expect(findings.length).toStrictEqual(1);
-      expect(findings).toStrictEqual([expectedFinding]);
-    });
-
-
-   
-
+    expect(findings).toStrictEqual([
+      expectedFinding(
+        TEST_DATA_1.agentId,
+        TEST_DATA_1.metadata,
+        TEST_DATA_1.chainIds[0],
+        TEST_DATA_1.owner
+      ),
+    ]);
   });
-
- 
-
+});
