@@ -9,7 +9,7 @@ import { createAddress } from "forta-agent-tools";
 import { provideHandleTransaction } from "./agent";
 import { TestTransactionEvent } from "forta-agent-tools/lib/test";
 import { Interface } from "@ethersproject/abi";
-import ethers from "ethers";
+import { BigNumber } from "ethers";
 
 var utils = require("ethers").utils;
 
@@ -18,16 +18,17 @@ import {
   CREATE_AGENT,
   FORTA_CONTRACT_ADDRESS,
 } from "./utils";
+
 const TEST_DATA_1 = {
-  agentId: utils.bigNumberify.from("444"),
+  agentId: BigNumber.from("444"),
   owner: createAddress("0x4"),
-  chainIds: [utils.bigNumberify.from("333")],
+  chainIds: [BigNumber.from("333")],
   metadata: "abcdefghi",
 };
 const TEST_DATA_2 = {
-  agentId: utils.bigNumberify.from("4444"),
+  agentId: BigNumber.from("4444"),
   owner: createAddress("0x44"),
-  chainIds: [utils.bigNumberify.from("3333")],
+  chainIds: [BigNumber.from("222")],
   metadata: "jklmnopqr",
 };
 
@@ -37,6 +38,8 @@ const TEST_FORTA_ADDRESS = createAddress("0x456");
 describe("Nethermind Agent", () => {
   let handleTransaction: HandleTransaction;
   let fortaProxy = new Interface([CREATE_AGENT]);
+  let txEvent;
+  let findings: Finding[];
 
   beforeAll(() => {
     handleTransaction = provideHandleTransaction(
@@ -47,14 +50,14 @@ describe("Nethermind Agent", () => {
   });
   it("returns empty findings if no transactions", async () => {
     let txEvent = new TestTransactionEvent();
-    const findings = await handleTransaction(txEvent);
+     findings = await handleTransaction(txEvent);
     expect(findings).toStrictEqual([]);
   });
 
   it("returns empty findings if it's a different deployer", async () => {
     const TEST_DEPLOYER = createAddress("0x1");
     console.log("reached here")
-    let txEvent = new TestTransactionEvent()
+     txEvent = new TestTransactionEvent()
       .setFrom(TEST_DEPLOYER)
       .setTo(FORTA_CONTRACT_ADDRESS)
       .addTraces({
@@ -66,13 +69,58 @@ describe("Nethermind Agent", () => {
           TEST_DATA_1.agentId,
           TEST_DEPLOYER,
           TEST_DATA_1.metadata,
-          [utils.bigNumberify.from(TEST_DATA_1.chainIds[0])],
+          [BigNumber.from(TEST_DATA_1.chainIds[0])],
         ],
       });
 
-    const findings = await handleTransaction(txEvent);
+     findings = await handleTransaction(txEvent);
     expect(findings).toStrictEqual([]);
   });
+
+  it("returns a finding if it's from deployer" , async () => {
+
+    txEvent = new TestTransactionEvent()
+    .setFrom(TEST_DEPLOYER_ADDRESS)
+    .setTo(TEST_FORTA_ADDRESS)
+    .addTraces({
+      function:  fortaProxy.getFunction("createAgent") ,
+      to: TEST_FORTA_ADDRESS,
+      from: TEST_DEPLOYER_ADDRESS,
+      arguments : [
+        TEST_DATA_1.agentId,
+        TEST_DEPLOYER_ADDRESS,
+        TEST_DATA_1.metadata,
+        [BigNumber.from(TEST_DATA_1.chainIds[0])],
+        
+      ]
+    })
+     findings = await handleTransaction(txEvent);
+   
+    expect(findings).toStrictEqual ([
+     Finding.fromObject({
+        name: "New Nethermind Bot Created",
+        description: `New bot deployed by NM`,
+        alertId: "FORTA-1",
+        severity: FindingSeverity.Low,
+        type: FindingType.Info,
+        metadata: {
+          agentId: TEST_DATA_1.agentId.toString(),
+          owner: TEST_DEPLOYER_ADDRESS,
+          chainIds: TEST_DATA_1.chainIds.toString(),
+          metadata: TEST_DATA_1.metadata,
+        },
+      }),
+
+      
+
+     
+       
+    ]);
+
+
+   
+
+  })
 
  
 });
