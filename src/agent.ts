@@ -10,36 +10,32 @@ import {
   FindingSeverity,
   FindingType,
 } from "forta-agent";
-import { NETHERMIND_DEPLOYER_ADDRESS,FORTA_CONTRACT_ADDRESS,CREATE_AGENT } from "./utils"
+import {
+  NETHERMIND_DEPLOYER_ADDRESS,
+  FORTA_CONTRACT_ADDRESS,
+  CREATE_AGENT,
+} from "./utils";
 
+export function provideHandleTransaction(
+  functionAbi: string,
+  proxy: string,
+  deployer: string
+): HandleTransaction {
+  return async function handleTransaction(txEvent: TransactionEvent) {
+    const findings: Finding[] = [];
 
-
-
-export function  provideHandleTransaction(functionAbi: string, proxy: string, deployer: string): HandleTransaction{
-  return async function handleTransaction(txEvent: TransactionEvent){
-
-     const findings: Finding[] = [];
-
-
-    if(txEvent.from!=deployer.toLowerCase()){
+    if (txEvent.from != deployer.toLowerCase()) {
       return findings;
     }
 
-   
+    const createBotTx = txEvent.filterFunction(functionAbi, proxy);
 
-
-    if(txEvent.from!=deployer.toLowerCase()){
-      return findings;
-    }
-
-    const createBotTx = txEvent.filterFunction(functionAbi,proxy);
-  
     createBotTx.forEach((call) => {
-      const {agentId,owner,chainIds,metadata} = call.args;
+      const { agentId, owner, chainIds, metadata } = call.args;
       findings.push(
         Finding.fromObject({
           name: "New Nethermind Bot Created",
-          description: `New bot Created with ID: ${agentId} and owner: ${owner} and metadata: ${metadata} and chainIds: ${chainIds}`,
+          description: `New bot deployed by NM`,
           alertId: "FORTA-1",
           severity: FindingSeverity.Low,
           type: FindingType.Info,
@@ -51,19 +47,11 @@ export function  provideHandleTransaction(functionAbi: string, proxy: string, de
           },
         })
       );
-    })
+    });
 
-    
-
-
-  return findings;
-
-
-  }
-
- 
+    return findings;
+  };
 }
- 
 
 // const initialize: Initialize = async () => {
 //   // do some initialization on startup e.g. fetch data
@@ -83,7 +71,11 @@ export function  provideHandleTransaction(functionAbi: string, proxy: string, de
 
 export default {
   // initialize,
-  handleTransaction : provideHandleTransaction(CREATE_AGENT,NETHERMIND_DEPLOYER_ADDRESS,FORTA_CONTRACT_ADDRESS),
+  handleTransaction: provideHandleTransaction(
+    CREATE_AGENT,
+    NETHERMIND_DEPLOYER_ADDRESS,
+    FORTA_CONTRACT_ADDRESS
+  ),
   // handleBlock,
   // handleAlert
 };
