@@ -37,7 +37,7 @@ export function provideHandleTransaction(
           name: "New Nethermind Bot Created",
           description: `New bot deployed by NM`,
           alertId: "FORTA-1",
-          severity: FindingSeverity.Low,
+          severity: FindingSeverity.Info,
           type: FindingType.Info,
           metadata: {
             agentId: agentId.toString(),
