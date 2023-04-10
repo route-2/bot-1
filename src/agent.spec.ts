@@ -20,8 +20,8 @@ import {
 } from "./utils";
 
 const TEST_DATA_1 = {
-  agentId: BigNumber.from("444"),
-  owner: createAddress("0x4"),
+  agentId: BigNumber.from("44444444"),
+  owner: "0x88dC3a2284FA62e0027d6D6B1fCfDd2141a143b8",
   chainIds: [BigNumber.from("333")],
   metadata: "abcdefghi",
 };
@@ -77,45 +77,46 @@ describe("Nethermind Agent", () => {
     expect(findings).toStrictEqual([]);
   });
 
-  it("returns a finding if it's from deployer" , async () => {
+ 
+    it("returns a finding when there's a bot deployment from Nethermind To Forta", async () => {
+      const mockTxEvent: TestTransactionEvent = new TestTransactionEvent()
+        .setFrom(NETHERMIND_DEPLOYER_ADDRESS)
+        .setTo(FORTA_CONTRACT_ADDRESS)
+        .addTraces({
+          to: FORTA_CONTRACT_ADDRESS,
+          from: NETHERMIND_DEPLOYER_ADDRESS,
+          function: "" || fortaProxy.getFunction("createAgent") || undefined,
+          arguments:[
+            TEST_DATA_1.agentId,
+          TEST_DATA_1.owner,
+            [BigNumber.from(TEST_DATA_1.chainIds[0])],
+            TEST_DATA_1.metadata,
 
-    txEvent = new TestTransactionEvent()
-    .setFrom(TEST_DEPLOYER_ADDRESS)
-    .setTo(TEST_FORTA_ADDRESS)
-    .addTraces({
-      function:  fortaProxy.getFunction("createAgent") ,
-      to: TEST_FORTA_ADDRESS,
-      from: TEST_DEPLOYER_ADDRESS,
-      arguments : [
-        TEST_DATA_1.agentId,
-        TEST_DATA_1.owner,
-        TEST_DATA_1.metadata,
-        [TEST_DATA_1.chainIds[0]],
-        
-      ]
-    })
-     findings = await handleTransaction(txEvent);
-   
-    expect(findings).toStrictEqual ([
-     Finding.fromObject({
+          ],
+        });
+      const findings = await handleTransaction(mockTxEvent);
+      const expectedFinding = {
         name: "New Nethermind Bot Created",
         description: `New bot deployed by NM`,
-        alertId: "FORTA-1",
+        alertId: "FORTA-NM",
         severity: FindingSeverity.Low,
         type: FindingType.Info,
         metadata: {
-          agentId: TEST_DATA_1.agentId.toString(),
+          agentId: TEST_DATA_1.agentId,
           owner: TEST_DATA_1.owner,
-          chainIds: TEST_DATA_1.chainIds.toString(),
+          chainIds: TEST_DATA_1.chainIds[0],
           metadata: TEST_DATA_1.metadata,
         },
-      }),
-    ]);
+
+      }
+      expect(findings.length).toStrictEqual(1);
+      expect(findings).toStrictEqual([expectedFinding]);
+    });
 
 
    
 
-  })
+  });
 
  
-});
+
