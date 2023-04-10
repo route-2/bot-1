@@ -77,51 +77,40 @@ describe("Nethermind Agent", () => {
     expect(findings).toStrictEqual([]);
   });
 
-  it("returns a finding when there's a bot deployment from Nethermind To Forta", async () => {
-    const mockTxEvent: TestTransactionEvent = new TestTransactionEvent()
-      .setFrom(NETHERMIND_DEPLOYER_ADDRESS)
+  it("returns findings if it's from deployer", async () => {
+    txEvent = new TestTransactionEvent()
+      .setFrom(TEST_DEPLOYER_ADDRESS)
       .setTo(FORTA_CONTRACT_ADDRESS)
       .addTraces({
-        to: FORTA_CONTRACT_ADDRESS,
-        from: NETHERMIND_DEPLOYER_ADDRESS,
         function: "" || fortaProxy.getFunction("createAgent") || undefined,
+        to: FORTA_CONTRACT_ADDRESS,
+        from: TEST_DEPLOYER_ADDRESS,
+
         arguments: [
           TEST_DATA_1.agentId,
-          TEST_DATA_1.owner,
-
+          TEST_DEPLOYER_ADDRESS,
           TEST_DATA_1.metadata,
           [BigNumber.from(TEST_DATA_1.chainIds[0])],
         ],
       });
-    const findings = await handleTransaction(mockTxEvent);
-    const expectedFinding = (
-      agentId: string,
-      metadata: string,
-      chainIds: string,
-      owner: string
-    ): Finding => {
-      return Finding.fromObject({
+
+    findings = await handleTransaction(txEvent);
+    expect(findings).toStrictEqual([
+      Finding.fromObject({
         name: "New Nethermind Bot Created",
         description: `New bot deployed by NM`,
-        alertId: "FORTA-NM",
-        severity: FindingSeverity.Low,
+        alertId: "FORTA-1",
+        severity: FindingSeverity.Info,
         type: FindingType.Info,
         metadata: {
           agentId: TEST_DATA_1.agentId,
-          owner: TEST_DATA_1.owner,
-          chainIds: TEST_DATA_1.chainIds,
+          owner: TEST_DEPLOYER_ADDRESS,
+          chainIds: TEST_DATA_1.chainIds[0],
           metadata: TEST_DATA_1.metadata,
         },
-      });
-    };
-
-    expect(findings).toStrictEqual([
-      expectedFinding(
-        TEST_DATA_1.agentId,
-        TEST_DATA_1.metadata,
-        TEST_DATA_1.chainIds[0],
-        TEST_DATA_1.owner
-      ),
+      }),
     ]);
-  });
+  })
+
+  
 });
