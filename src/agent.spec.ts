@@ -88,9 +88,9 @@ describe("Nethermind Agent", () => {
       from: TEST_DEPLOYER_ADDRESS,
       arguments : [
         TEST_DATA_1.agentId,
-        TEST_DEPLOYER_ADDRESS,
+        TEST_DATA_1.owner,
         TEST_DATA_1.metadata,
-        [BigNumber.from(TEST_DATA_1.chainIds[0])],
+        [TEST_DATA_1.chainIds[0]],
         
       ]
     })
@@ -105,16 +105,11 @@ describe("Nethermind Agent", () => {
         type: FindingType.Info,
         metadata: {
           agentId: TEST_DATA_1.agentId.toString(),
-          owner: TEST_DEPLOYER_ADDRESS,
+          owner: TEST_DATA_1.owner,
           chainIds: TEST_DATA_1.chainIds.toString(),
           metadata: TEST_DATA_1.metadata,
         },
       }),
-
-      
-
-     
-       
     ]);
 
 
